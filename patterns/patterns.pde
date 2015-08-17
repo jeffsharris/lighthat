@@ -44,7 +44,7 @@ int columns[][7] = { {0, 20, 39, 58, 77, 95, 113},
                     {6, 26, 45, 64, 83, 101, 119},
                     {7, 27, 46, 65, 84, 102, 120},
                     {8, 28, 47, 66, 85, 103, 121},
-                    {9, 29, 48, 67, 67, 67, 67},
+                    {9, 29, 48, 67, 122, 122, 122},
                     {10, 30, 49, 68, 86, 104, 104},
                     {11, 12, 31, 50, 69, 87, 105},
                     // {12, 12, 12, 12, 12, 12, 12}, Don't use this row
@@ -80,18 +80,18 @@ void rainbowJump(uint8_t wait);
 void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
 void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
 void twistedSweep(uint32_t spins, uint8_t wait);
-void diagonalSweep(uint32_t spins, uint8_t wait);
-void sweep(uint32_t spins, uint8_t wait);
+void diagonalSweep(uint8_t angle, uint32_t spins, uint8_t wait);
 uint32_t Wheel(uint16_t WheelPos);
-uint32_t wave(uint16_t position);
+float wave(uint16_t position);
 
 void loop() {
-sinWave2(colors[0], colors[1], 20, 40);
+diagonalSweep(3, 20, 40);
+  for (int i = 0; i < N_COLORS; i++) {
+    sinWave2(colors[i+1], colors[i], 10, 20);
+  }
   rainbowCycleWave(0);
   //rainbowJump(10);
-diagonalSweep(20, 40);
 
-sweep(20, 40);
 twistedSweep(300, 40);
 
 dither(10);
@@ -103,28 +103,13 @@ colorChase(strip.Color(127, 0, 0), 10);
   
 }
 
-void sweep(uint32_t spins, uint8_t wait) { // Sweep around the hat in a colored pattern
+void diagonalSweep(uint8_t angle, uint32_t spins, uint8_t wait) { // Sweep around the hat in a colored pattern
   for (int i = 0; i < spins; i++) {
     for (int j = 0; j < N_COLUMNS; j++) {
       for (int k = 0; k < N_ROWS; k++) {
-        strip.setPixelColor(columns[(j-1 + N_COLUMNS) % N_COLUMNS][k], strip.Color(0, 0, 0));
+        strip.setPixelColor(columns[(j-1 + N_COLUMNS + k * angle) % N_COLUMNS][k], strip.Color(0, 0, 0));
         for (int m = 0; m < N_COLORS; m++) { // For color tracking
-          strip.setPixelColor(columns[(j+m) % N_COLUMNS][k], colors[m]);
-        }
-      }
-    strip.show();
-    delay(wait);
-    }
-  }
-}
-
-void diagonalSweep(uint32_t spins, uint8_t wait) { // Sweep around the hat in a colored pattern
-  for (int i = 0; i < spins; i++) {
-    for (int j = 0; j < N_COLUMNS; j++) {
-      for (int k = 0; k < N_ROWS; k++) {
-        strip.setPixelColor(columns[(j-1 + N_COLUMNS + k) % N_COLUMNS][k], strip.Color(0, 0, 0));
-        for (int m = 0; m < N_COLORS; m++) { // For color tracking
-          strip.setPixelColor(columns[(j+m + k) % N_COLUMNS][k], colors[m]);
+          strip.setPixelColor(columns[(j+m + k * angle) % N_COLUMNS][k], colors[m]);
         }
       }
     strip.show();
@@ -152,10 +137,11 @@ void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t
     for (int waveStart=0; waveStart < LED_PER_ROW; waveStart++) {
      for (int wavePointPosition=0; wavePointPosition < LED_PER_ROW; wavePointPosition++) {
        for (int pixelPosition = 0; pixelPosition < N_ROWS; pixelPosition++) {
-         if (wave(wavePointPosition) == pixelPosition) {
-           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], colors[wavePointPosition % N_COLORS]);
+         Serial.println(abs(wave(wavePointPosition) - pixelPosition));
+         if (abs(wave(wavePointPosition) - pixelPosition) < 1) {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], color);
          } else {
-           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], strip.Color(0, 0, 0));
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], backgroundColor);
          }
        }
      }
@@ -165,33 +151,6 @@ void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t
   }
 }
 
-void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait) {
-  for (int i=0; i < spins; i++) {
-    for (int waveStart=0; waveStart < LED_PER_ROW; waveStart++) {
-     for (int wavePointPosition=0; wavePointPosition < LED_PER_ROW; wavePointPosition++) {
-       boolean foundMatch = false;
-       for (int pixelPosition = -3; pixelPosition <= 3; pixelPosition++) {
-         
-         float sinValue = sin(2.0 * wavePointPosition / LED_PER_ROW * pi) * 4.0;
-         Serial.println(wait); 
-         //Serial.println(pixelPosition); //Serial.println(" ");//Serial.println(waveStart); //Serial.print(" "); Serial.print(wavePointPosition); Serial.println(" ");
-         if (sinValue < pixelPosition & foundMatch == false) {
-           strip.setPixelColor(waveStart + wavePointPosition + LED_PER_ROW * (pixelPosition + 3), colors[0]);
-           foundMatch = true;
-         }
-         else {
-           strip.setPixelColor(waveStart + wavePointPosition + LED_PER_ROW * (pixelPosition + 3), colors[1]);
-         }
-         if ((waveStart + wavePointPosition + LED_PER_ROW * (pixelPosition + 3)) % LED_PER_ROW == 0) {
-           strip.setPixelColor(waveStart + wavePointPosition + LED_PER_ROW * (pixelPosition + 3), colors[4]);
-         }
-       }
-     }
-   strip.show();
-   delay(wait);
-    }
-  }
-} 
 
 // An "ordered dither" fills every pixel in a sequence that looks
 // sparkly and almost random, but actually follows a specific order.
@@ -282,45 +241,43 @@ uint32_t Wheel(uint16_t WheelPos)
   return(strip.Color(r,g,b));
 }
 
-uint32_t wave(uint16_t position) {
+float wave(uint16_t position) {
   switch(position) {
     case 0:
-      return 3;
+      return 2.5;
     case 1:
-      return 4;
+      return 3.5;
     case 2:
-      return 5;
+      return 4.5;
     case 3:
-      return 6;
+      return 5.5;
     case 4:
       return 6;
     case 5:
-      return 5;
+      return 5.5;
     case 6:
-      return 4;
-    case 7:
-      return 3;
-    case 8:
-      return 2;
-    case 9:
-      return 1;
-    case 10:
-      return 0;
-    case 11:
-      return 0;
-    case 12:
-      return 1;
-    case 13:
-      return 2;
-    case 14:
-      return 3;
-    case 15:
-      return 4;
-    case 16:
       return 5;
+    case 7:
+      return 4.5;
+    case 8:
+      return 3.5;
+    case 9:
+      return 2.5;
+    case 10:
+      return 1.5;
+    case 11:
+      return 0.5;
+    case 12:
+      return 0;
+    case 13:
+      return 0;
+    case 14:
+      return 0.5;
+    case 15:
+      return 1;
+    case 16:
+      return 1.5;
     case 17:
-      return 6;
-    case 18:
-      return 6;
+      return 2.5;
   }
 }
