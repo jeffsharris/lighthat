@@ -17,7 +17,7 @@ int clockPin = 15;
 #endif
 
 #define N_LEDS       122
-#define N_COLUMNS    20
+#define N_COLUMNS    19
 #define LEG_LENGTH   32
 #define LED_PER_ROW  18
 #define N_ROWS       7
@@ -47,7 +47,7 @@ int columns[][7] = { {0, 20, 39, 58, 77, 95, 113},
                     {9, 29, 48, 67, 67, 67, 67},
                     {10, 30, 49, 68, 86, 104, 104},
                     {11, 31, 50, 69, 87, 105, 105},
-                    {12, 12, 12, 12, 12, 12, 12},
+                    // {12, 12, 12, 12, 12, 12, 12}, Don't use this row
                     {13, 32, 51, 70, 88, 106, 106},
                     {14, 33, 52, 71, 89, 107, 107},
                     {15, 34, 53, 72, 90, 108, 108},
@@ -69,33 +69,30 @@ void setup() {
 }
 
 // function prototypes, do not remove these!
-void candyCane(uint32_t c1, uint32_t c2, uint8_t len, uint8_t space, uint8_t wait);
 void colorChase(uint32_t c, uint8_t wait);
-void colorWipe(uint32_t c, uint8_t wait);
 void dither(uint8_t wait);
-void merge(uint32_t c1, uint32_t c2, boolean fromEdges, uint8_t wait);
+
 void rainbowDither(uint8_t wait);
-void rainbowCycle(uint8_t wait);
+
 void rainbowCycleWave(uint8_t wait);
 void rainbowJump(uint8_t wait);
-void scanner(uint8_t r, uint8_t g, uint8_t b, uint8_t wait);
+
 void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
 void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
-void spiral(uint32_t c, boolean downDirection, uint8_t wait);
-void stack(uint32_t c1, uint32_t c2, boolean downDirection, uint8_t wait);
 void twistedSweep(uint32_t spins, uint8_t wait);
 void diagonalSweep(uint32_t spins, uint8_t wait);
 void sweep(uint32_t spins, uint8_t wait);
-void wave(uint32_t c, int cycles, uint8_t wait);
 uint32_t Wheel(uint16_t WheelPos);
 
 void loop() {
-//rainbowJump(10);
-diagonalSweep(20, 40);
 sinWave2(colors[0], colors[1], 20, 40);
+  rainbowCycleWave(0);
+  //rainbowJump(10);
+diagonalSweep(20, 40);
+
 sweep(20, 40);
 twistedSweep(300, 40);
-rainbowCycleWave(0);
+
 dither(10);
   
 
@@ -154,13 +151,13 @@ void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t
     for (int waveStart=0; waveStart < LED_PER_ROW; waveStart++) {
      for (int wavePointPosition=0; wavePointPosition < LED_PER_ROW; wavePointPosition++) {
        boolean foundMatch = false;
-       for (int pixelPosition = -3; pixelPosition <= 3; pixelPosition++) {
-         float sinValue = sin(2.0 * wavePointPosition / N_COLUMNS * pi) * 4.0;
-         if ((sinValue < pixelPosition) & (foundMatch == false)) {
-           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition + 3], colors[0]);
+       for (int pixelPosition = 0; pixelPosition < N_ROWS; pixelPosition++) {
+         float sinValue = sin(2.0 * pi * wavePointPosition / N_COLUMNS) * 4.0 + 3;
+         if (((sinValue < pixelPosition) || (pixelPosition == (N_ROWS - 1))) && (foundMatch == false)) {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], colors[wavePointPosition % N_COLORS]);
            foundMatch = true;
          } else {
-           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition + 3], colors[1]);
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], strip.Color(0, 0, 0));
          }
        }
      }
@@ -198,23 +195,63 @@ void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t 
   }
 } 
 
+// An "ordered dither" fills every pixel in a sequence that looks
+// sparkly and almost random, but actually follows a specific order.
+void dither(uint8_t wait) {
+
+  // Determine highest bit needed to represent pixel index
+  int hiBit = 0;
+  int n = strip.numPixels() - 1;
+  for(int bit=1; bit < 0x8000; bit <<= 1) {
+    if(n & bit) hiBit = bit;
+  }
+
+  int bit, reverse;
+  for(int i=0; i<(hiBit << 1); i++) {
+    // Reverse the bits in i to create ordered dither:
+    reverse = 0;
+    for(bit=1; bit <= hiBit; bit <<= 1) {
+      reverse <<= 1;
+      if(i & bit) reverse |= 1;
+    }
+    strip.setPixelColor(reverse, colors[random(N_COLORS)]);
+    strip.show();
+    delay(wait);
+  }
+  delay(250); // Hold image for 1/4 sec
+}
+
 // Cycle through the color wheel, going down all four strands simultaneously
 void rainbowCycleWave(uint8_t wait) {
   uint16_t i, j;
 
   for (j=0; j < 384 * 5; j++) {     // 5 cycles of all 384 colors in the wheel
-    for (i=0; i < LEG_LENGTH; i++) {
+    for (i=0; i < N_LEDS; i++) {
       // tricky math! we use each pixel as a fraction of the full 384-color
       // wheel (thats the i / strip.numPixels() part)
       // Then add in j which makes the colors go around per pixel
       // the % 384 is to make the wheel cycle around
-      for (int k = 0; k < N_STRIPS; k++) {
-        strip.setPixelColor(lights[k][i], Wheel(((i * 384 / LEG_LENGTH) + j) % 384));
-      }
+      strip.setPixelColor(i, Wheel(((i * 384 / LEG_LENGTH) + j) % 384));
     }
     strip.show();   // write all the pixels out
     delay(wait);
   }
+}
+
+void colorChase(uint32_t c, uint8_t wait) {
+  int i;
+
+  for (i=0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, 0);  // turn all pixels off
+  }
+
+  for (i=0; i < strip.numPixels(); i++) {
+      strip.setPixelColor(i, c); // set one pixel
+      strip.show();              // refresh strip display
+      delay(wait);               // hold image for a moment
+      strip.setPixelColor(i, 0); // erase pixel (but don't refresh yet)
+  }
+  strip.show(); // for last erased pixel
 }
 
 
@@ -246,3 +283,4 @@ uint32_t Wheel(uint16_t WheelPos)
   }
   return(strip.Color(r,g,b));
 }
+
