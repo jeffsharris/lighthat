@@ -17,11 +17,14 @@ int clockPin = 15;
 #endif
 
 #define N_LEDS       122
+#define N_COLUMNS    20
 #define LEG_LENGTH   32
 #define LED_PER_ROW  18
 #define N_ROWS       7
 #define N_STRIPS     4
 #define N_COLORS     7
+
+const float pi = 3.14;
 
 // Set the first variable to the NUMBER of pixels. 32 = 32 pixels in a row
 // The LED strips are 32 LEDs per meter but you can extend/cut the strip
@@ -31,6 +34,29 @@ int lights[][32] = { {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 
                      {63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32},
                      {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95},
                      {127, 126, 125, 124, 123, 122, 121, 120, 119, 118, 117, 116, 115, 114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104, 103, 102, 101, 100, 99, 98, 97, 96} };
+                     
+int columns[][7] = { {0, 20, 39, 58, 77, 95, 113},
+                    {1, 21, 40, 59, 78, 96, 114},
+                    {2, 22, 41, 60, 79, 97, 115},
+                    {3, 23, 42, 61, 80, 98, 116},
+                    {4, 24, 43, 62, 81, 99, 117},
+                    {5, 25, 44, 63, 82, 100, 118},
+                    {6, 26, 45, 64, 83, 101, 119},
+                    {7, 27, 46, 65, 84, 102, 120},
+                    {8, 28, 47, 66, 85, 103, 121},
+                    {9, 29, 48, 67, 67, 67, 67},
+                    {10, 30, 49, 68, 86, 104, 104},
+                    {11, 31, 50, 69, 87, 105, 105},
+                    {12, 12, 12, 12, 12, 12, 12},
+                    {13, 32, 51, 70, 88, 106, 106},
+                    {14, 33, 52, 71, 89, 107, 107},
+                    {15, 34, 53, 72, 90, 108, 108},
+                    {16, 35, 54, 73, 91, 109, 109},
+                    {17, 36, 55, 74, 92, 110, 110},
+                    {18, 37, 56, 75, 93, 111, 111}, 
+                    {19, 38, 57, 76, 94, 112, 112} };
+                    
+                                 
                   
 uint32_t colors[] = { strip.Color(127, 0, 0), strip.Color(127, 127, 0), strip.Color(0, 127, 0), strip.Color(0, 127, 127), strip.Color(0, 0, 127), strip.Color(127, 0, 127), strip.Color(127, 127, 127) };
 
@@ -53,16 +79,22 @@ void rainbowCycle(uint8_t wait);
 void rainbowCycleWave(uint8_t wait);
 void rainbowJump(uint8_t wait);
 void scanner(uint8_t r, uint8_t g, uint8_t b, uint8_t wait);
+void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
+void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
 void spiral(uint32_t c, boolean downDirection, uint8_t wait);
 void stack(uint32_t c1, uint32_t c2, boolean downDirection, uint8_t wait);
-void sweep(uint8_t wait, uint32_t spins);
+void twistedSweep(uint32_t spins, uint8_t wait);
+void diagonalSweep(uint32_t spins, uint8_t wait);
+void sweep(uint32_t spins, uint8_t wait);
 void wave(uint32_t c, int cycles, uint8_t wait);
 uint32_t Wheel(uint16_t WheelPos);
 
 void loop() {
-  delay(5000);
 //rainbowJump(10);
-sweep(40, 300);
+diagonalSweep(20, 40);
+sinWave2(colors[0], colors[1], 20, 40);
+sweep(20, 40);
+twistedSweep(300, 40);
 rainbowCycleWave(0);
 dither(10);
   
@@ -73,7 +105,37 @@ colorChase(strip.Color(127, 0, 0), 10);
   
 }
 
-void sweep(uint8_t wait, uint32_t spins) {
+void sweep(uint32_t spins, uint8_t wait) { // Sweep around the hat in a colored pattern
+  for (int i = 0; i < spins; i++) {
+    for (int j = 0; j < N_COLUMNS; j++) {
+      for (int k = 0; k < N_ROWS; k++) {
+        strip.setPixelColor(columns[(j-1 + N_COLUMNS) % N_COLUMNS][k], strip.Color(0, 0, 0));
+        for (int m = 0; m < N_COLORS; m++) { // For color tracking
+          strip.setPixelColor(columns[(j+m) % N_COLUMNS][k], colors[m]);
+        }
+      }
+    strip.show();
+    delay(wait);
+    }
+  }
+}
+
+void diagonalSweep(uint32_t spins, uint8_t wait) { // Sweep around the hat in a colored pattern
+  for (int i = 0; i < spins; i++) {
+    for (int j = 0; j < N_COLUMNS; j++) {
+      for (int k = 0; k < N_ROWS; k++) {
+        strip.setPixelColor(columns[(j-1 + N_COLUMNS + k) % N_COLUMNS][k], strip.Color(0, 0, 0));
+        for (int m = 0; m < N_COLORS; m++) { // For color tracking
+          strip.setPixelColor(columns[(j+m + k) % N_COLUMNS][k], colors[m]);
+        }
+      }
+    strip.show();
+    delay(wait);
+    }
+  }
+}
+
+void twistedSweep(uint32_t spins, uint8_t wait) { // Sweep around the hat in a colored pattern
   for (int i = 0; i < spins; i++) {
     for (int j = 0; j < N_LEDS; j++) {
       if ((i + j) % LED_PER_ROW < N_COLORS) {
@@ -87,147 +149,54 @@ void sweep(uint8_t wait, uint32_t spins) {
   }
 }
 
-// Chase a dot down the strip
-// good for testing purposes
-void colorChase(uint32_t c, uint8_t wait) {
-  int i;
-
-  for (i=0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, 0);  // turn all pixels off
-  }
-
-  for (i=0; i < strip.numPixels(); i++) {
-      strip.setPixelColor(i, c); // set one pixel
-      strip.show();              // refresh strip display
-      delay(wait);               // hold image for a moment
-      strip.setPixelColor(i, 0); // erase pixel (but don't refresh yet)
-  }
-  strip.show(); // for last erased pixel
-}
-
-// fill the dots one after the other with said color
-// good for testing purposes
-void colorWipe(uint32_t c, uint8_t wait) {
-  int i;
-
-  for (i=0; i < strip.numPixels(); i++) {
-      strip.setPixelColor(i, c);
-      strip.show();
-      delay(wait);
-  }
-}
-
-// An "ordered dither" fills every pixel in a sequence that looks
-// sparkly and almost random, but actually follows a specific order.
-void dither(uint8_t wait) {
-
-  // Determine highest bit needed to represent pixel index
-  int hiBit = 0;
-  int n = strip.numPixels() - 1;
-  for(int bit=1; bit < 0x8000; bit <<= 1) {
-    if(n & bit) hiBit = bit;
-  }
-
-  int bit, reverse;
-  for(int i=0; i<(hiBit << 1); i++) {
-    // Reverse the bits in i to create ordered dither:
-    reverse = 0;
-    for(bit=1; bit <= hiBit; bit <<= 1) {
-      reverse <<= 1;
-      if(i & bit) reverse |= 1;
-    }
-    strip.setPixelColor(reverse, colors[random(N_COLORS)]);
+void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait) {
+  for (int i=0; i < spins; i++) {
+    for (int waveStart=0; waveStart < LED_PER_ROW; waveStart++) {
+     for (int wavePointPosition=0; wavePointPosition < LED_PER_ROW; wavePointPosition++) {
+       boolean foundMatch = false;
+       for (int pixelPosition = -3; pixelPosition <= 3; pixelPosition++) {
+         float sinValue = sin(2.0 * wavePointPosition / N_COLUMNS * pi) * 4.0;
+         if ((sinValue < pixelPosition) & (foundMatch == false)) {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition + 3], colors[0]);
+           foundMatch = true;
+         } else {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition + 3], colors[1]);
+         }
+       }
+     }
     strip.show();
     delay(wait);
+    }
   }
-  delay(250); // Hold image for 1/4 sec
 }
 
-// Lights merge together either from top and bottom or apart from middle
-void merge(uint32_t c1, uint32_t c2, boolean fromEdges, uint8_t wait) {
-  for (int i = 0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, c2);
-  }
-  strip.show();
-  delay(wait);  
-  if (fromEdges) {
-    for (int i = 0, j = LEG_LENGTH - 1; i < j; i++, j--) {
-      for (int k = 0; k < N_STRIPS; k++) {
-        strip.setPixelColor(lights[k][i], c1);
-        strip.setPixelColor(lights[k][j], c1);
-      }
-    strip.show();
-    delay(wait); 
+void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait) {
+  for (int i=0; i < spins; i++) {
+    for (int waveStart=0; waveStart < LED_PER_ROW; waveStart++) {
+     for (int wavePointPosition=0; wavePointPosition < LED_PER_ROW; wavePointPosition++) {
+       boolean foundMatch = false;
+       for (int pixelPosition = -3; pixelPosition <= 3; pixelPosition++) {
+         
+         float sinValue = sin(2.0 * wavePointPosition / LED_PER_ROW * pi) * 4.0;
+         Serial.println(wait); 
+         //Serial.println(pixelPosition); //Serial.println(" ");//Serial.println(waveStart); //Serial.print(" "); Serial.print(wavePointPosition); Serial.println(" ");
+         if (sinValue < pixelPosition & foundMatch == false) {
+           strip.setPixelColor(waveStart + wavePointPosition + LED_PER_ROW * (pixelPosition + 3), colors[0]);
+           foundMatch = true;
+         }
+         else {
+           strip.setPixelColor(waveStart + wavePointPosition + LED_PER_ROW * (pixelPosition + 3), colors[1]);
+         }
+         if ((waveStart + wavePointPosition + LED_PER_ROW * (pixelPosition + 3)) % LED_PER_ROW == 0) {
+           strip.setPixelColor(waveStart + wavePointPosition + LED_PER_ROW * (pixelPosition + 3), colors[4]);
+         }
+       }
+     }
+   strip.show();
+   delay(wait);
     }
-  } else {
-    for (int i = (LEG_LENGTH / 2) - 1, j = LEG_LENGTH / 2; i >=0; i--, j++) {
-      for (int k = 0; k < N_STRIPS; k++) {
-        strip.setPixelColor(lights[k][i], c1);
-        strip.setPixelColor(lights[k][j], c1);
-      }
-      strip.show();
-      delay(wait);       
-    }
-  }  
-}
-
-// An "ordered dither" fills every pixel in a sequence that looks
-// sparkly and almost random, but actually follows a specific order.
-// This pattern uses a random assortment of colors.
-void rainbowDither(uint8_t wait) {
-
-  // Determine highest bit needed to represent pixel index
-  int hiBit = 0;
-  int n = strip.numPixels() - 1;
-  for(int bit=1; bit < 0x8000; bit <<= 1) {
-    if(n & bit) hiBit = bit;
   }
-
-  int bit, reverse;
-  for(int i=0; i<(hiBit << 1); i++) {
-    // Reverse the bits in i to create ordered dither:
-    reverse = 0;
-    for(bit=1; bit <= hiBit; bit <<= 1) {
-      reverse <<= 1;
-      if(i & bit) reverse |= 1;
-    }
-    strip.setPixelColor(reverse, colors[random(N_COLORS)]);
-    strip.show();
-    delay(wait);
-  }
-  delay(250); // Hold image for 1/4 sec
-}
-
-// Create a rainbow pattern that moves around the hat
-void rainbowJump(uint8_t wait) {
-  for (int i = 0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, strip.Color(127, 127, 127));
-  }
-  for (int i = 0, j = 314; i < 315 && j >=0; i++, j--) {
-    for (int k = 0; k < N_COLORS - 1; k++) { // (N_COLORS-1) to avoid using the white final color. This could probably be cleaned up by taking advantage of the white fill color being in this array
-      strip.setPixelColor((i+k) % N_LEDS, colors[k]);
-    }
-    strip.setPixelColor((i-1) % N_LEDS, strip.Color(127, 127, 127));
-    strip.show();
-    delay(wait);
-  }
-}
-// Cycle through the color wheel, equally spaced around the belt
-void rainbowCycle(uint8_t wait) {
-  uint16_t i, j;
-
-  for (j=0; j < 384 * 5; j++) {     // 5 cycles of all 384 colors in the wheel
-    for (i=0; i < strip.numPixels(); i++) {
-      // tricky math! we use each pixel as a fraction of the full 384-color
-      // wheel (thats the i / strip.numPixels() part)
-      // Then add in j which makes the colors go around per pixel
-      // the % 384 is to make the wheel cycle around
-      strip.setPixelColor(i, Wheel(((i * 384 / strip.numPixels()) + j) % 384));
-    }
-    strip.show();   // write all the pixels out
-    delay(wait);
-  }
-}
+} 
 
 // Cycle through the color wheel, going down all four strands simultaneously
 void rainbowCycleWave(uint8_t wait) {
@@ -248,142 +217,6 @@ void rainbowCycleWave(uint8_t wait) {
   }
 }
 
-// "Larson scanner" = Cylon/KITT bouncing light effect
-void scanner(uint8_t r, uint8_t g, uint8_t b, uint8_t wait) {
-  int i, j, pos, dir;
-
-  pos = 0;
-  dir = 1;
-
-  for(i=0; i<((strip.numPixels()-1) * 8); i++) {
-    // Draw 5 pixels centered on pos.  setPixelColor() will clip
-    // any pixels off the ends of the strip, no worries there.
-    // we'll make the colors dimmer at the edges for a nice pulse
-    // look
-    strip.setPixelColor(pos - 2, strip.Color(r/4, g/4, b/4));
-    strip.setPixelColor(pos - 1, strip.Color(r/2, g/2, b/2));
-    strip.setPixelColor(pos, strip.Color(r, g, b));
-    strip.setPixelColor(pos + 1, strip.Color(r/2, g/2, b/2));
-    strip.setPixelColor(pos + 2, strip.Color(r/4, g/4, b/4));
-
-    strip.show();
-    delay(wait);
-    // If we wanted to be sneaky we could erase just the tail end
-    // pixel, but it's much easier just to erase the whole thing
-    // and draw a new one next time.
-    for(j=-2; j<= 2; j++) 
-        strip.setPixelColor(pos+j, strip.Color(0,0,0));
-    // Bounce off ends of strip
-    pos += dir;
-    if(pos < 0) {
-      pos = 1;
-      dir = -dir;
-    } else if(pos >= strip.numPixels()) {
-      pos = strip.numPixels() - 2;
-      dir = -dir;
-    }
-  }
-}
-
-// Spiral pattern in either an up or down direction
-void spiral(uint32_t c, boolean downDirection, uint8_t wait) {
-  uint16_t j;
-  
-  if (downDirection) {  
-    for (int i = 0; i < LEG_LENGTH; i++) {
-      for (int j = 0; j < N_STRIPS; j++) {
-        strip.setPixelColor(lights[j][i], c);
-      }
-      strip.show();
-      delay(wait);
-    }
-  } else {
-    for (int i = 0; i < LEG_LENGTH; i++) {
-      for (int j = 0; j < N_STRIPS; j++) {
-        strip.setPixelColor(lights[j][LEG_LENGTH - 1 - i], c);
-      }
-      strip.show();
-      delay(wait);
-    }
-  }       
-}
-
-// Create a stack of colors in either up or down direction
-void stack(uint32_t c1, uint32_t c2, boolean downDirection, uint8_t wait) {
-  for (int i = 0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, c2);
-  }
-  if (downDirection) {
-    for (int max = LEG_LENGTH; max > 0; max--) {
-      for (int j = 0; j < N_STRIPS; j++) {
-        strip.setPixelColor(lights[j][0], c1); // Set the first row to the color
-      }
-      strip.show();
-      delay(wait);
-      for (int i = 1; i < max; i++) { // Move the colored row down
-        for (int j = 0; j < N_STRIPS; j++) {
-          strip.setPixelColor(lights[j][i], c1); // Move the row down
-          strip.setPixelColor(lights[j][i-1], c2); // Clear the previous row
-        }
-        strip.show();
-        delay(wait);
-      }
-    }
-  } else {
-    for (int min = 0; min < LEG_LENGTH; min++) {
-      for (int j = 0; j < N_STRIPS; j++) {
-        strip.setPixelColor(lights[j][LEG_LENGTH - 1], c1); // Set the last row to the color
-      }
-      strip.show();
-      delay(wait);
-      for (int i = LEG_LENGTH - 2; i >= min; i--) { // Move the colored row up
-        for (int j = 0; j < N_STRIPS; j++) {
-          strip.setPixelColor(lights[j][i], c1); // Move the row down
-          strip.setPixelColor(lights[j][i+1], c2); // Clear the previous row
-        }
-        strip.show();
-        delay(wait);
-      }
-    }
-  }    
-}
-
-
-
-// Sine wave effect
-#define PI 3.14159265
-void wave(uint32_t c, int cycles, uint8_t wait) {
-  float y;
-  byte  r, g, b, r2, g2, b2;
-
-  // Need to decompose color into its r, g, b elements
-  g = (c >> 16) & 0x7f;
-  r = (c >>  8) & 0x7f;
-  b =  c        & 0x7f; 
-
-  for(int x=0; x<(strip.numPixels()*5); x++)
-  {
-    for(int i=0; i<strip.numPixels(); i++) {
-      y = sin(PI * (float)cycles * (float)(x + i) / (float)strip.numPixels());
-      if(y >= 0.0) {
-        // Peaks of sine wave are white
-        y  = 1.0 - y; // Translate Y to 0.0 (top) to 1.0 (center)
-        r2 = 127 - (byte)((float)(127 - r) * y);
-        g2 = 127 - (byte)((float)(127 - g) * y);
-        b2 = 127 - (byte)((float)(127 - b) * y);
-      } else {
-        // Troughs of sine wave are black
-        y += 1.0; // Translate Y to 0.0 (bottom) to 1.0 (center)
-        r2 = (byte)((float)r * y);
-        g2 = (byte)((float)g * y);
-        b2 = (byte)((float)b * y);
-      }
-      strip.setPixelColor(i, r2, g2, b2);
-    }
-    strip.show();
-    delay(wait);
-  }
-}
 
 /* Helper functions */
 
