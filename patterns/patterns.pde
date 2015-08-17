@@ -46,7 +46,7 @@ int columns[][7] = { {0, 20, 39, 58, 77, 95, 113},
                     {8, 28, 47, 66, 85, 103, 121},
                     {9, 29, 48, 67, 67, 67, 67},
                     {10, 30, 49, 68, 86, 104, 104},
-                    {11, 31, 50, 69, 87, 105, 105},
+                    {11, 12, 31, 50, 69, 87, 105},
                     // {12, 12, 12, 12, 12, 12, 12}, Don't use this row
                     {13, 32, 51, 70, 88, 106, 106},
                     {14, 33, 52, 71, 89, 107, 107},
@@ -83,6 +83,7 @@ void twistedSweep(uint32_t spins, uint8_t wait);
 void diagonalSweep(uint32_t spins, uint8_t wait);
 void sweep(uint32_t spins, uint8_t wait);
 uint32_t Wheel(uint16_t WheelPos);
+uint32_t wave(uint16_t position);
 
 void loop() {
 sinWave2(colors[0], colors[1], 20, 40);
@@ -150,12 +151,9 @@ void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t
   for (int i=0; i < spins; i++) {
     for (int waveStart=0; waveStart < LED_PER_ROW; waveStart++) {
      for (int wavePointPosition=0; wavePointPosition < LED_PER_ROW; wavePointPosition++) {
-       boolean foundMatch = false;
        for (int pixelPosition = 0; pixelPosition < N_ROWS; pixelPosition++) {
-         float sinValue = sin(2.0 * pi * wavePointPosition / N_COLUMNS) * 4.0 + 3;
-         if (((sinValue < pixelPosition) || (pixelPosition == (N_ROWS - 1))) && (foundMatch == false)) {
+         if (wave(wavePointPosition) == pixelPosition) {
            strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], colors[wavePointPosition % N_COLORS]);
-           foundMatch = true;
          } else {
            strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], strip.Color(0, 0, 0));
          }
@@ -284,3 +282,45 @@ uint32_t Wheel(uint16_t WheelPos)
   return(strip.Color(r,g,b));
 }
 
+uint32_t wave(uint16_t position) {
+  switch(position) {
+    case 0:
+      return 3;
+    case 1:
+      return 4;
+    case 2:
+      return 5;
+    case 3:
+      return 6;
+    case 4:
+      return 6;
+    case 5:
+      return 5;
+    case 6:
+      return 4;
+    case 7:
+      return 3;
+    case 8:
+      return 2;
+    case 9:
+      return 1;
+    case 10:
+      return 0;
+    case 11:
+      return 0;
+    case 12:
+      return 1;
+    case 13:
+      return 2;
+    case 14:
+      return 3;
+    case 15:
+      return 4;
+    case 16:
+      return 5;
+    case 17:
+      return 6;
+    case 18:
+      return 6;
+  }
+}
