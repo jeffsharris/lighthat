@@ -71,13 +71,12 @@ void setup() {
 // function prototypes, do not remove these!
 void colorChase(uint32_t c, uint8_t wait);
 void dither(uint8_t wait);
-
+void quickWipe();
 void rainbowDither(uint8_t wait);
 
 void rainbowCycleWave(uint8_t wait);
 void rainbowJump(uint8_t wait);
-void randomBeam(uint32_t repeats, uint8_t wait);
-void randomBeamBounce(uint32_t repeats, uint32_t wait);
+void randomBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait);
 void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
 void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
 void twistedSweep(uint32_t spins, uint8_t wait);
@@ -87,9 +86,8 @@ uint32_t Wheel(uint16_t WheelPos);
 void wipe();
 
 void loop() {
-  randomBeamBounce(20, 25);
+  randomBeamBounce(20, 10, 1000);
   wipe();
-  randomBeam(20, 20);
   diagonalSweep(3, 20, 40);
   for (int i = 0; i < N_COLORS; i++) {
     sinWave2(colors[i+1], colors[i], 10, 20);
@@ -213,38 +211,6 @@ void colorChase(uint32_t c, uint8_t wait) {
   strip.show(); // for last erased pixel
 }
 
-void randomBeam(uint32_t repeats, uint8_t wait) {
-  for (int i = 0; i < repeats; i++) {
-    int x = random(0, N_COLUMNS);
-    int y = random(0, N_ROWS);
-    int direction = random(0, 4);
-    int color = random(0, N_COLORS);
-    for (int j = 0; j < 30; j++) {
-      strip.setPixelColor(columns[x % N_COLUMNS][y % N_ROWS], colors[color]);
-      switch(direction) {
-        case 0:
-          x++;
-          y++;
-          break;
-        case 1:
-          x--;
-          y++;
-          break;
-        case 2:
-          x--;
-          y--;
-          break;
-         case 3:
-           x++;
-           y--;
-           break;
-      }
-      strip.show();
-      delay(wait);
-    }
-  }
-}
-
 void wipe() {
   for (int i = 0; i < N_LEDS; i++) {
     strip.setPixelColor(i, strip.Color(0, 0, 0));
@@ -253,17 +219,41 @@ void wipe() {
   }
 }
 
-void randomBeamBounce(uint32_t repeats, uint32_t wait) {
+void quickWipe() {
+  for (int i = 0; i < N_LEDS; i++) {
+    strip.setPixelColor(i, strip.Color(0, 0, 0));
+  }
+  strip.show();
+}
+
+void randomBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait) {
   for (int i = 0; i < repeats; i++) {
+    quickWipe();
+    int trail[length];
+    for (int j = 0; j < length; j++) {
+      trail[j] = N_LEDS; // Initialize to one greater than the last LED
+    }
     int x = random(0, N_COLUMNS);
     int y = random(0, N_ROWS);
     int x_direction = random(0, 2);
     int y_direction = random(0, 2);
     
     int color = random(0, N_COLORS);
-    for (int j = 0; j < 30; j++) {
-
-      strip.setPixelColor(columns[x % N_COLUMNS][y], colors[color]);
+    int tailColor = color;
+    while(tailColor == color) {
+      tailColor = random(0, N_COLORS);
+    }
+    for (int j = 0; j < 4 * length; j++) {
+      strip.setPixelColor(trail[length - 1], strip.Color(0, 0, 0)); 
+      for (int k = length - 1; k > 0; k--) {
+        trail[k] = trail[k - 1];
+        strip.setPixelColor(trail[k], strip.Color(extractRed(colors[tailColor]) * (length - k) / length,
+                                                  extractGreen(colors[tailColor]) * (length - k) / length,
+                                                  extractBlue(colors[tailColor]) * (length - k) / length));
+      }
+      trail[0] = columns[x % N_COLUMNS][y];
+      Serial.println(y);
+      strip.setPixelColor(trail[0], colors[color]);
      
       if (y == 0) {
         y_direction = 0;
@@ -275,6 +265,9 @@ void randomBeamBounce(uint32_t repeats, uint32_t wait) {
         x++;
       } else {
         x--;
+        if (x == 0) {
+          x += N_COLUMNS; // Make sure we aren't doing modulus of a negative number
+        }
       }
      
       if (y_direction == 0) {
@@ -287,7 +280,6 @@ void randomBeamBounce(uint32_t repeats, uint32_t wait) {
     }
   }
 }
-
 
 /* Helper functions */
 
@@ -357,4 +349,14 @@ float wave(uint16_t position) {
     case 17:
       return 2.5;
   }
+}
+
+int extractRed(uint32_t color) {
+  return ((color >> 8) & 0x0000007F);  
+}
+int extractGreen(uint32_t color) {
+  return (color >> 16) & 0x0000007F; 
+}
+int extractBlue(uint32_t color) {
+  return color & 0x0000007F;
 }
