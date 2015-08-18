@@ -76,29 +76,31 @@ void rainbowDither(uint8_t wait);
 
 void rainbowCycleWave(uint8_t wait);
 void rainbowJump(uint8_t wait);
-
+void randomBeam(uint32_t repeats, uint8_t wait);
+void randomBeamBounce(uint32_t repeats, uint32_t wait);
 void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
 void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
 void twistedSweep(uint32_t spins, uint8_t wait);
 void diagonalSweep(uint8_t angle, uint32_t spins, uint8_t wait);
-uint32_t Wheel(uint16_t WheelPos);
 float wave(uint16_t position);
+uint32_t Wheel(uint16_t WheelPos);
+void wipe();
 
 void loop() {
-diagonalSweep(3, 20, 40);
+  randomBeamBounce(20, 25);
+  wipe();
+  randomBeam(20, 20);
+  diagonalSweep(3, 20, 40);
   for (int i = 0; i < N_COLORS; i++) {
     sinWave2(colors[i+1], colors[i], 10, 20);
   }
   rainbowCycleWave(0);
   //rainbowJump(10);
 
-twistedSweep(300, 40);
+  twistedSweep(300, 40);
 
-dither(10);
-  
-
- 
-colorChase(strip.Color(127, 0, 0), 10); 
+  dither(10);
+  colorChase(strip.Color(127, 0, 0), 10); 
 
   
 }
@@ -209,6 +211,81 @@ void colorChase(uint32_t c, uint8_t wait) {
       strip.setPixelColor(i, 0); // erase pixel (but don't refresh yet)
   }
   strip.show(); // for last erased pixel
+}
+
+void randomBeam(uint32_t repeats, uint8_t wait) {
+  for (int i = 0; i < repeats; i++) {
+    int x = random(0, N_COLUMNS);
+    int y = random(0, N_ROWS);
+    int direction = random(0, 4);
+    int color = random(0, N_COLORS);
+    for (int j = 0; j < 30; j++) {
+      strip.setPixelColor(columns[x % N_COLUMNS][y % N_ROWS], colors[color]);
+      switch(direction) {
+        case 0:
+          x++;
+          y++;
+          break;
+        case 1:
+          x--;
+          y++;
+          break;
+        case 2:
+          x--;
+          y--;
+          break;
+         case 3:
+           x++;
+           y--;
+           break;
+      }
+      strip.show();
+      delay(wait);
+    }
+  }
+}
+
+void wipe() {
+  for (int i = 0; i < N_LEDS; i++) {
+    strip.setPixelColor(i, strip.Color(0, 0, 0));
+    strip.show();
+    delay(5);
+  }
+}
+
+void randomBeamBounce(uint32_t repeats, uint32_t wait) {
+  for (int i = 0; i < repeats; i++) {
+    int x = random(0, N_COLUMNS);
+    int y = random(0, N_ROWS);
+    int x_direction = random(0, 2);
+    int y_direction = random(0, 2);
+    
+    int color = random(0, N_COLORS);
+    for (int j = 0; j < 30; j++) {
+
+      strip.setPixelColor(columns[x % N_COLUMNS][y], colors[color]);
+     
+      if (y == 0) {
+        y_direction = 0;
+      } else if (y == N_ROWS - 1) {
+        y_direction = 1;
+      }
+     
+      if (x_direction == 0) {
+        x++;
+      } else {
+        x--;
+      }
+     
+      if (y_direction == 0) {
+        y++;
+      } else {
+        y--;
+      }
+      strip.show();
+      delay(wait);
+    }
+  }
 }
 
 
