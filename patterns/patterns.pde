@@ -76,6 +76,7 @@ void rainbowDither(uint8_t wait);
 
 void rainbowCycleWave(uint8_t wait);
 void rainbowJump(uint8_t wait);
+void rainbowBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait);
 void randomBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait);
 void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
 void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
@@ -86,7 +87,8 @@ uint32_t Wheel(uint16_t WheelPos);
 void wipe();
 
 void loop() {
-  randomBeamBounce(20, 10, 1000);
+  rainbowBeamBounce(20, 20, 40);
+  randomBeamBounce(20, 20, 20);
   wipe();
   diagonalSweep(3, 20, 40);
   for (int i = 0; i < N_COLORS; i++) {
@@ -254,6 +256,54 @@ void randomBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait) {
       trail[0] = columns[x % N_COLUMNS][y];
       Serial.println(y);
       strip.setPixelColor(trail[0], colors[color]);
+     
+      if (y == 0) {
+        y_direction = 0;
+      } else if (y == N_ROWS - 1) {
+        y_direction = 1;
+      }
+     
+      if (x_direction == 0) {
+        x++;
+      } else {
+        x--;
+        if (x == 0) {
+          x += N_COLUMNS; // Make sure we aren't doing modulus of a negative number
+        }
+      }
+     
+      if (y_direction == 0) {
+        y++;
+      } else {
+        y--;
+      }
+      strip.show();
+      delay(wait);
+    }
+  }
+}
+
+void rainbowBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait) {
+  for (int i = 0; i < repeats; i++) {
+    quickWipe();
+    int trail[length];
+    for (int j = 0; j < length; j++) {
+      trail[j] = N_LEDS; // Initialize to one greater than the last LED
+    }
+    int x = random(0, N_COLUMNS);
+    int y = random(0, N_ROWS);
+    int x_direction = random(0, 2);
+    int y_direction = random(0, 2);
+    
+    for (int j = 0; j < 4 * length; j++) {
+      strip.setPixelColor(trail[length - 1], strip.Color(0, 0, 0)); 
+      for (int k = length - 1; k > 0; k--) {
+        trail[k] = trail[k - 1];
+        strip.setPixelColor(trail[k], colors[k % N_COLORS]);
+      }
+      trail[0] = columns[x % N_COLUMNS][y];
+      Serial.println(y);
+      strip.setPixelColor(trail[0], colors[N_COLORS - 1]);
      
       if (y == 0) {
         y_direction = 0;
