@@ -56,6 +56,14 @@ int columns[][7] = { {0, 20, 39, 58, 77, 95, 113},
                     {18, 37, 56, 75, 93, 111, 111}, 
                     {19, 38, 57, 76, 94, 112, 112} };
                     
+int rows[][18] = { {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17},
+                 {18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35},
+                 {36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53},
+                 {54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 70},
+                 {71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 87},
+                 {88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 104},
+                 {105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 121} };
+                    
                                  
                   
 uint32_t colors[] = { strip.Color(127, 0, 0), strip.Color(127, 127, 0), strip.Color(0, 127, 0), strip.Color(0, 127, 127), strip.Color(0, 0, 127), strip.Color(127, 0, 127), strip.Color(127, 127, 127) };
@@ -87,6 +95,7 @@ uint32_t Wheel(uint16_t WheelPos);
 void wipe();
 
 void loop() {
+  horizontalRings2(200, 4, 100);
   rainbowBeamBounce(20, 20, 40);
   randomBeamBounce(20, 20, 20);
   wipe();
@@ -211,6 +220,49 @@ void colorChase(uint32_t c, uint8_t wait) {
       strip.setPixelColor(i, 0); // erase pixel (but don't refresh yet)
   }
   strip.show(); // for last erased pixel
+}
+
+void horizontalRings2(uint32_t moves, uint8_t length, uint32_t wait) {
+  int positions[N_ROWS];
+  for (int i = 0; i < N_ROWS; i++) {
+    positions[i] = i * pow(-1, i);
+  }
+  
+  for (int i = 0; i < moves; i++) {
+    for (int j = 0; j < N_ROWS; j++) {
+      if (j % (i + 1) == 0) {
+        strip.setPixelColor(rows[i][positions[j]], strip.Color(0, 0, 0));
+        positions[j] = (positions[j] + pow(-1, j) + N_COLUMNS) % N_COLUMNS;
+        for (int k = 0; k < length; k++) {
+          strip.setPixelColor(rows[i][positions[j]] , colors[j % N_ROWS]);
+        }
+      }
+    }
+    strip.show();
+    delay(wait);
+  }
+}
+      
+void horizontalRings(uint32_t spins, uint8_t length, uint32_t wait) {  
+  for (int i = 0; i < spins; i++) {
+    for (int j = 0; j < N_COLUMNS; j++) {
+      for (int k = 0; k < N_ROWS; k++) {
+        if (k % 2 == 0) {
+          strip.setPixelColor(rows[k][(k + j - 1 + N_COLUMNS) % N_COLUMNS], strip.Color(0, 0, 0));
+          for (int m = 0; m < length; m++) {
+            strip.setPixelColor(rows[k][(k + j + m) % N_COLUMNS], colors[k % N_COLORS]);
+          }
+        } else {
+          strip.setPixelColor(rows[k][(k + 2 * N_COLUMNS - j + 1) % N_COLUMNS], strip.Color(0, 0, 0));
+          for (int m = 0; m < length; m++) {
+            strip.setPixelColor(rows[k][(k + 2 * N_COLUMNS - j - m) % N_COLUMNS], colors[k % N_COLORS]);
+          }
+        }
+      }
+      strip.show();
+      delay(wait);
+    }
+  }
 }
 
 void wipe() {
