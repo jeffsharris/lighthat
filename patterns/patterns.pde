@@ -95,7 +95,7 @@ uint32_t Wheel(uint16_t WheelPos);
 void wipe();
 
 void loop() {
-  horizontalRings2(200, 4, 100);
+  horizontalRings2(800, 8, 20);
   rainbowBeamBounce(20, 20, 40);
   randomBeamBounce(20, 20, 20);
   wipe();
@@ -228,13 +228,15 @@ void horizontalRings2(uint32_t moves, uint8_t length, uint32_t wait) {
     positions[i] = i * pow(-1, i);
   }
   
-  for (int i = 0; i < moves; i++) {
+  for (int i = 1; i <= moves; i++) {
     for (int j = 0; j < N_ROWS; j++) {
-      if (j % (i + 1) == 0) {
-        strip.setPixelColor(rows[i][positions[j]], strip.Color(0, 0, 0));
-        positions[j] = (positions[j] + pow(-1, j) + N_COLUMNS) % N_COLUMNS;
-        for (int k = 0; k < length; k++) {
-          strip.setPixelColor(rows[i][positions[j]] , colors[j % N_ROWS]);
+      if (i % (j + 1) == 0) {
+        strip.setPixelColor(rows[j][positions[j]], strip.Color(0, 0, 0));
+        positions[j] = int(positions[j] + pow(-1, j+1) + LED_PER_ROW) % LED_PER_ROW;
+        strip.setPixelColor(rows[j][positions[j]], colors[j % N_ROWS]);
+       // strip.setPixelColor(rows[j][int(positions[j] +  pow(-1, j+1)) % N_COLUMNS], colors[j % N_ROWS]);
+       for (int k = 0; abs(k) < length; k += pow(-1, j + 1)) {
+          strip.setPixelColor(rows[j][int(positions[j] + k + LED_PER_ROW) % LED_PER_ROW] , colors[j % N_ROWS]);
         }
       }
     }
@@ -306,7 +308,6 @@ void randomBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait) {
                                                   extractBlue(colors[tailColor]) * (length - k) / length));
       }
       trail[0] = columns[x % N_COLUMNS][y];
-      Serial.println(y);
       strip.setPixelColor(trail[0], colors[color]);
      
       if (y == 0) {
@@ -462,3 +463,4 @@ int extractGreen(uint32_t color) {
 int extractBlue(uint32_t color) {
   return color & 0x0000007F;
 }
+
