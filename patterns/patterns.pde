@@ -76,32 +76,15 @@ void setup() {
   strip.show();
 }
 
-// function prototypes, do not remove these!
-void colorChase(uint32_t c, uint8_t wait);
-void dither(uint8_t wait);
-void quickWipe();
-void rainbowDither(uint8_t wait);
-
-void rainbowCycleWave(uint8_t wait);
-void rainbowJump(uint8_t wait);
-void rainbowBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait);
-void randomBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait);
-void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
-void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait);
-void twistedSweep(uint32_t spins, uint8_t wait);
-void diagonalSweep(uint8_t angle, uint32_t spins, uint8_t wait);
-float wave(uint16_t position);
-uint32_t Wheel(uint16_t WheelPos);
-void wipe();
 
 void loop() {
-  horizontalRings2(800, 8, 20);
+  horizontalRings(800, 8, 20);
   rainbowBeamBounce(20, 20, 40);
-  randomBeamBounce(20, 20, 20);
+  //randomBeamBounce(20, 20, 20);
   wipe();
   diagonalSweep(3, 20, 40);
   for (int i = 0; i < N_COLORS; i++) {
-    sinWave2(colors[i+1], colors[i], 10, 20);
+    sinWave(colors[i+1], colors[i], 10, 20);
   }
   rainbowCycleWave(0);
   //rainbowJump(10);
@@ -114,7 +97,23 @@ void loop() {
   
 }
 
-void diagonalSweep(uint8_t angle, uint32_t spins, uint8_t wait) { // Sweep around the hat in a colored pattern
+void colorChase(uint32_t c, uint8_t wait) {
+  int i;
+
+  for (i=0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, 0);  // turn all pixels off
+  }
+
+  for (i=0; i < strip.numPixels(); i++) {
+      strip.setPixelColor(i, c); // set one pixel
+      strip.show();              // refresh strip display
+      delay(wait);               // hold image for a moment
+      strip.setPixelColor(i, 0); // erase pixel (but don't refresh yet)
+  }
+  strip.show(); // for last erased pixel
+}
+
+void diagonalSweep(uint8_t angle, uint32_t spins, uint16_t wait) { // Sweep around the hat in a colored pattern
   for (int i = 0; i < spins; i++) {
     for (int j = 0; j < N_COLUMNS; j++) {
       for (int k = 0; k < N_ROWS; k++) {
@@ -128,40 +127,6 @@ void diagonalSweep(uint8_t angle, uint32_t spins, uint8_t wait) { // Sweep aroun
     }
   }
 }
-
-void twistedSweep(uint32_t spins, uint8_t wait) { // Sweep around the hat in a colored pattern
-  for (int i = 0; i < spins; i++) {
-    for (int j = 0; j < N_LEDS; j++) {
-      if ((i + j) % LED_PER_ROW < N_COLORS) {
-        strip.setPixelColor(j, colors[(i + j) % LED_PER_ROW]);
-      } else {
-        strip.setPixelColor(j, 0);
-      }
-    }
-    strip.show();
-    delay(wait);
-  }
-}
-
-void sinWave2(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint32_t wait) {
-  for (int i=0; i < spins; i++) {
-    for (int waveStart=0; waveStart < LED_PER_ROW; waveStart++) {
-     for (int wavePointPosition=0; wavePointPosition < LED_PER_ROW; wavePointPosition++) {
-       for (int pixelPosition = 0; pixelPosition < N_ROWS; pixelPosition++) {
-         Serial.println(abs(wave(wavePointPosition) - pixelPosition));
-         if (abs(wave(wavePointPosition) - pixelPosition) < 1) {
-           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], color);
-         } else {
-           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], backgroundColor);
-         }
-       }
-     }
-    strip.show();
-    delay(wait);
-    }
-  }
-}
-
 
 // An "ordered dither" fills every pixel in a sequence that looks
 // sparkly and almost random, but actually follows a specific order.
@@ -189,8 +154,78 @@ void dither(uint8_t wait) {
   delay(250); // Hold image for 1/4 sec
 }
 
+void horizontalRings(uint32_t moves, uint8_t length, uint16_t wait) {
+  int positions[N_ROWS];
+  for (int i = 0; i < N_ROWS; i++) {
+    positions[i] = i * pow(-1, i);
+  }
+  
+  for (int i = 1; i <= moves; i++) {
+    for (int j = 0; j < N_ROWS; j++) {
+      if (i % (j + 1) == 0) {
+        strip.setPixelColor(rows[j][positions[j]], strip.Color(0, 0, 0));
+        positions[j] = int(positions[j] + pow(-1, j+1) + LED_PER_ROW) % LED_PER_ROW;
+       for (int k = 0; abs(k) < length; k += pow(-1, j + 1)) {
+          strip.setPixelColor(rows[j][int(positions[j] + k + LED_PER_ROW) % LED_PER_ROW] , colors[j % N_ROWS]);
+        }
+      }
+    }
+    strip.show();
+    delay(wait);
+  }
+}
+
+void rainbowBeamBounce(uint32_t repeats, uint8_t length, uint16_t wait) {
+  for (int i = 0; i < repeats; i++) {
+    quickWipe();
+    int trail[length];
+    for (int j = 0; j < length; j++) {
+      trail[j] = N_LEDS; // Initialize to one greater than the last LED
+    }
+    int x = random(0, N_COLUMNS);
+    int y = random(0, N_ROWS);
+    int x_direction = random(0, 2);
+    int y_direction = random(0, 2);
+    
+    for (int j = 0; j < 4 * length; j++) {
+      strip.setPixelColor(trail[length - 1], strip.Color(0, 0, 0)); 
+      for (int k = length - 1; k > 0; k--) {
+        trail[k] = trail[k - 1];
+        strip.setPixelColor(trail[k], colors[k % N_COLORS]);
+      }
+      trail[0] = columns[x % N_COLUMNS][y];
+      Serial.println(y);
+      strip.setPixelColor(trail[0], colors[N_COLORS - 1]);
+     
+      if (y == 0) {
+        y_direction = 0;
+      } else if (y == N_ROWS - 1) {
+        y_direction = 1;
+      }
+     
+      if (x_direction == 0) {
+        x++;
+      } else {
+        x--;
+        if (x == 0) {
+          x += N_COLUMNS; // Make sure we aren't doing modulus of a negative number
+        }
+      }
+     
+      if (y_direction == 0) {
+        y++;
+      } else {
+        y--;
+      }
+      strip.show();
+      delay(wait);
+    }
+  }
+}
+
+
 // Cycle through the color wheel, going down all four strands simultaneously
-void rainbowCycleWave(uint8_t wait) {
+void rainbowCycleWave(uint16_t wait) {
   uint16_t i, j;
 
   for (j=0; j < 384 * 5; j++) {     // 5 cycles of all 384 colors in the wheel
@@ -206,83 +241,7 @@ void rainbowCycleWave(uint8_t wait) {
   }
 }
 
-void colorChase(uint32_t c, uint8_t wait) {
-  int i;
-
-  for (i=0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, 0);  // turn all pixels off
-  }
-
-  for (i=0; i < strip.numPixels(); i++) {
-      strip.setPixelColor(i, c); // set one pixel
-      strip.show();              // refresh strip display
-      delay(wait);               // hold image for a moment
-      strip.setPixelColor(i, 0); // erase pixel (but don't refresh yet)
-  }
-  strip.show(); // for last erased pixel
-}
-
-void horizontalRings2(uint32_t moves, uint8_t length, uint32_t wait) {
-  int positions[N_ROWS];
-  for (int i = 0; i < N_ROWS; i++) {
-    positions[i] = i * pow(-1, i);
-  }
-  
-  for (int i = 1; i <= moves; i++) {
-    for (int j = 0; j < N_ROWS; j++) {
-      if (i % (j + 1) == 0) {
-        strip.setPixelColor(rows[j][positions[j]], strip.Color(0, 0, 0));
-        positions[j] = int(positions[j] + pow(-1, j+1) + LED_PER_ROW) % LED_PER_ROW;
-        strip.setPixelColor(rows[j][positions[j]], colors[j % N_ROWS]);
-       // strip.setPixelColor(rows[j][int(positions[j] +  pow(-1, j+1)) % N_COLUMNS], colors[j % N_ROWS]);
-       for (int k = 0; abs(k) < length; k += pow(-1, j + 1)) {
-          strip.setPixelColor(rows[j][int(positions[j] + k + LED_PER_ROW) % LED_PER_ROW] , colors[j % N_ROWS]);
-        }
-      }
-    }
-    strip.show();
-    delay(wait);
-  }
-}
-      
-void horizontalRings(uint32_t spins, uint8_t length, uint32_t wait) {  
-  for (int i = 0; i < spins; i++) {
-    for (int j = 0; j < N_COLUMNS; j++) {
-      for (int k = 0; k < N_ROWS; k++) {
-        if (k % 2 == 0) {
-          strip.setPixelColor(rows[k][(k + j - 1 + N_COLUMNS) % N_COLUMNS], strip.Color(0, 0, 0));
-          for (int m = 0; m < length; m++) {
-            strip.setPixelColor(rows[k][(k + j + m) % N_COLUMNS], colors[k % N_COLORS]);
-          }
-        } else {
-          strip.setPixelColor(rows[k][(k + 2 * N_COLUMNS - j + 1) % N_COLUMNS], strip.Color(0, 0, 0));
-          for (int m = 0; m < length; m++) {
-            strip.setPixelColor(rows[k][(k + 2 * N_COLUMNS - j - m) % N_COLUMNS], colors[k % N_COLORS]);
-          }
-        }
-      }
-      strip.show();
-      delay(wait);
-    }
-  }
-}
-
-void wipe() {
-  for (int i = 0; i < N_LEDS; i++) {
-    strip.setPixelColor(i, strip.Color(0, 0, 0));
-    strip.show();
-    delay(5);
-  }
-}
-
-void quickWipe() {
-  for (int i = 0; i < N_LEDS; i++) {
-    strip.setPixelColor(i, strip.Color(0, 0, 0));
-  }
-  strip.show();
-}
-
-void randomBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait) {
+void randomBeamBounce(uint32_t repeats, uint8_t length, uint16_t wait) {
   for (int i = 0; i < repeats; i++) {
     quickWipe();
     int trail[length];
@@ -336,82 +295,71 @@ void randomBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait) {
   }
 }
 
-void rainbowBeamBounce(uint32_t repeats, uint8_t length, uint32_t wait) {
-  for (int i = 0; i < repeats; i++) {
-    quickWipe();
-    int trail[length];
-    for (int j = 0; j < length; j++) {
-      trail[j] = N_LEDS; // Initialize to one greater than the last LED
-    }
-    int x = random(0, N_COLUMNS);
-    int y = random(0, N_ROWS);
-    int x_direction = random(0, 2);
-    int y_direction = random(0, 2);
-    
-    for (int j = 0; j < 4 * length; j++) {
-      strip.setPixelColor(trail[length - 1], strip.Color(0, 0, 0)); 
-      for (int k = length - 1; k > 0; k--) {
-        trail[k] = trail[k - 1];
-        strip.setPixelColor(trail[k], colors[k % N_COLORS]);
-      }
-      trail[0] = columns[x % N_COLUMNS][y];
-      Serial.println(y);
-      strip.setPixelColor(trail[0], colors[N_COLORS - 1]);
-     
-      if (y == 0) {
-        y_direction = 0;
-      } else if (y == N_ROWS - 1) {
-        y_direction = 1;
-      }
-     
-      if (x_direction == 0) {
-        x++;
-      } else {
-        x--;
-        if (x == 0) {
-          x += N_COLUMNS; // Make sure we aren't doing modulus of a negative number
-        }
-      }
-     
-      if (y_direction == 0) {
-        y++;
-      } else {
-        y--;
-      }
-      strip.show();
-      delay(wait);
+void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint16_t wait) {
+  for (int i=0; i < spins; i++) {
+    for (int waveStart=0; waveStart < LED_PER_ROW; waveStart++) {
+     for (int wavePointPosition=0; wavePointPosition < LED_PER_ROW; wavePointPosition++) {
+       for (int pixelPosition = 0; pixelPosition < N_ROWS; pixelPosition++) {
+         Serial.println(abs(wave(wavePointPosition) - pixelPosition));
+         if (abs(wave(wavePointPosition) - pixelPosition) < 1) {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], color);
+         } else {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], backgroundColor);
+         }
+       }
+     }
+    strip.show();
+    delay(wait);
     }
   }
 }
+
+void synthesizer(uint32_t repititions, uint16_t wait
+
+void twistedSweep(uint32_t spins, uint16_t wait) { // Sweep around the hat in a colored pattern
+  for (int i = 0; i < spins; i++) {
+    for (int j = 0; j < N_LEDS; j++) {
+      if ((i + j) % LED_PER_ROW < N_COLORS) {
+        strip.setPixelColor(j, colors[(i + j) % LED_PER_ROW]);
+      } else {
+        strip.setPixelColor(j, 0);
+      }
+    }
+    strip.show();
+    delay(wait);
+  }
+}
+
+
+
 
 /* Helper functions */
 
 //Input a value 0 to 384 to get a color value.
 //The colours are a transition r - g - b - back to r
 
-uint32_t Wheel(uint16_t WheelPos)
-{
-  byte r, g, b;
-  switch(WheelPos / 128)
-  {
-    case 0:
-      r = 127 - WheelPos % 128; // red down
-      g = WheelPos % 128;       // green up
-      b = 0;                    // blue off
-      break;
-    case 1:
-      g = 127 - WheelPos % 128; // green down
-      b = WheelPos % 128;       // blue up
-      r = 0;                    // red off
-      break;
-    case 2:
-      b = 127 - WheelPos % 128; // blue down
-      r = WheelPos % 128;       // red up
-      g = 0;                    // green off
-      break;
-  }
-  return(strip.Color(r,g,b));
+int extractBlue(uint32_t color) {
+  return color & 0x0000007F;
 }
+int extractGreen(uint32_t color) {
+  return (color >> 16) & 0x0000007F; 
+}
+int extractRed(uint32_t color) {
+  return ((color >> 8) & 0x0000007F);  
+}
+
+
+
+
+
+
+void quickWipe() {
+  for (int i = 0; i < N_LEDS; i++) {
+    strip.setPixelColor(i, strip.Color(0, 0, 0));
+  }
+  strip.show();
+}
+
 
 float wave(uint16_t position) {
   switch(position) {
@@ -454,13 +402,38 @@ float wave(uint16_t position) {
   }
 }
 
-int extractRed(uint32_t color) {
-  return ((color >> 8) & 0x0000007F);  
+uint32_t Wheel(uint16_t WheelPos)
+{
+  byte r, g, b;
+  switch(WheelPos / 128)
+  {
+    case 0:
+      r = 127 - WheelPos % 128; // red down
+      g = WheelPos % 128;       // green up
+      b = 0;                    // blue off
+      break;
+    case 1:
+      g = 127 - WheelPos % 128; // green down
+      b = WheelPos % 128;       // blue up
+      r = 0;                    // red off
+      break;
+    case 2:
+      b = 127 - WheelPos % 128; // blue down
+      r = WheelPos % 128;       // red up
+      g = 0;                    // green off
+      break;
+  }
+  return(strip.Color(r,g,b));
 }
-int extractGreen(uint32_t color) {
-  return (color >> 16) & 0x0000007F; 
+
+void wipe() {
+  for (int i = 0; i < N_LEDS; i++) {
+    strip.setPixelColor(i, strip.Color(0, 0, 0));
+    strip.show();
+    delay(5);
+  }
 }
-int extractBlue(uint32_t color) {
-  return color & 0x0000007F;
-}
+
+
+
 
