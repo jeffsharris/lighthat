@@ -78,6 +78,7 @@ void setup() {
 
 
 void loop() {
+  synthesizer(500, 40);
   horizontalRings(800, 8, 20);
   rainbowBeamBounce(20, 20, 40);
   //randomBeamBounce(20, 20, 20);
@@ -314,7 +315,32 @@ void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint16_t 
   }
 }
 
-void synthesizer(uint32_t repititions, uint16_t wait
+void synthesizer(uint32_t repititions, uint16_t wait) {
+  int heights[N_COLUMNS];
+  for (int i = 0; i < N_COLUMNS; i++) {
+    heights[i] = random(0, N_ROWS);
+  }
+  for (int i = 0; i < repititions; i++) {
+    for (int i = 0; i < N_LEDS; i++) {
+      strip.setPixelColor(i, strip.Color(0, 0, 0));
+    }
+    for (int j = 0; j < N_COLUMNS; j++) {
+      for (int k = 0; k < heights[j]; k++) {
+        strip.setPixelColor(columns[j][k], colors[6]);
+      }
+      if(random(0,2) == 0) {
+        heights[j] = min(N_ROWS - 1, j+1);
+        Serial.println("increased");
+      } else {
+        heights[j] = max(0, j - 1);
+        Serial.println("decreased");
+      }
+    }
+    strip.show();
+    delay(wait);
+  }
+}
+    
 
 void twistedSweep(uint32_t spins, uint16_t wait) { // Sweep around the hat in a colored pattern
   for (int i = 0; i < spins; i++) {
