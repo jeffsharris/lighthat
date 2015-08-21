@@ -78,6 +78,12 @@ void setup() {
 
 
 void loop() {
+  for (int i = 0; i < N_COLORS; i++) {
+    sinWave(colors[i+1], colors[i], 5, 20);
+    doubleSinWave(colors[i+1], colors[i], 5, 20);
+    sinWave(colors[i+1], colors[i], 5, 20);
+  }
+
   synthesizer(500, 40);
   horizontalRings(800, 8, 20);
   rainbowBeamBounce(20, 20, 40);
@@ -154,6 +160,26 @@ void dither(uint8_t wait) {
   }
   delay(250); // Hold image for 1/4 sec
 }
+
+void doubleSinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint16_t wait) {
+  for (int i=0; i < spins; i++) {
+    for (int waveStart=0; waveStart < LED_PER_ROW; waveStart++) {
+     for (int wavePointPosition=0; wavePointPosition < LED_PER_ROW; wavePointPosition++) {
+       for (int pixelPosition = 0; pixelPosition < N_ROWS; pixelPosition++) {
+         Serial.println(abs(wave(wavePointPosition) - pixelPosition));
+         if (abs(doubleWave(wavePointPosition) - pixelPosition) < 1) {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], color);
+         } else {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], backgroundColor);
+         }
+       }
+     }
+    strip.show();
+    delay(wait);
+    }
+  }
+}
+
 
 void horizontalRings(uint32_t moves, uint8_t length, uint16_t wait) {
   int positions[N_ROWS];
@@ -363,6 +389,47 @@ void twistedSweep(uint32_t spins, uint16_t wait) { // Sweep around the hat in a 
 
 //Input a value 0 to 384 to get a color value.
 //The colours are a transition r - g - b - back to r
+
+float doubleWave(uint16_t position) {
+  switch(position) {
+    case 0:
+      return 4.5;
+    case 1:
+      return 5.5;
+    case 2:
+      return 6;
+    case 3:
+      return 6;
+    case 4:
+      return 4.5;
+    case 5:
+      return 3.5;
+    case 6:
+      return 2;
+    case 7:
+      return 2;
+    case 8:
+      return 3.5;
+    case 9:
+      return 4.5;
+    case 10:
+      return 5.5;
+    case 11:
+      return 6;
+    case 12:
+      return 6;
+    case 13:
+      return 4.5;
+    case 14:
+      return 3.5;
+    case 15:
+      return 2;
+    case 16:
+      return 2;
+    case 17:
+      return 3.5;
+  }
+}
 
 int extractBlue(uint32_t color) {
   return color & 0x0000007F;
