@@ -76,11 +76,26 @@ void setup() {
   strip.show();
 }
 
+void accelleratingSweep(int maxAngle, int minSpeed) {
+  for (int i = 0; i <= maxAngle; i++) {
+    for (int j = 0; j < minSpeed; j++) {
+      sweep(3-i, -1, pow(i,1.5) * minSpeed + j);
+    }
+    Serial.println("---");
+  }
+  quickWipe();
+  for (int i = 0; i <= maxAngle; i++) {
+    for (int j = minSpeed - 1; j >= 0; j--) {
+      sweep(i, 1, pow(maxAngle - i,1.5) * minSpeed + j);
+    }
+  }
+  quickWipe();  
+}
+
 
 void loop() {
-  for (int i = 3; i > -4; i--) {
-    diagonalSweep(i, 10, 20);
-  }
+  inverseRainbowSinWave(10,20);
+  accelleratingSweep(3, 10);
    
   for (int i = 0; i < N_COLORS; i++) {
     sinWave(colors[i+1], colors[i], 5, 20);
@@ -126,24 +141,22 @@ void colorChase(uint32_t c, uint8_t wait) {
   strip.show(); // for last erased pixel
 }
 
-void diagonalSweep(int angle, uint32_t spins, uint16_t wait) { // Sweep around the hat in a colored pattern
-  int dir;
-  if (angle >= 0) {
-    dir = 1;
-  } else {
-    dir = -1;
-  }
+void diagonalSweep(int angle, int dir, uint32_t spins, uint16_t wait) { // Sweep around the hat in a colored pattern
   for (int i = 0; i < spins; i++) {
-    for (int j = 0; abs(j) < N_COLUMNS; j = j + dir) {
-      for (int k = 0; k < N_ROWS; k++) {
-        strip.setPixelColor(columns[(j-dir + N_COLUMNS*N_COLUMNS + dir * k * angle) % N_COLUMNS][k], 0);
-        for (int m = 0; m < N_COLORS; m++) { // For color tracking
-          strip.setPixelColor(columns[(j+dir * m + dir * k * angle + N_COLUMNS*N_COLUMNS) % N_COLUMNS][k], colors[m]);
-        }
+    sweep(angle, dir, wait);
+  }
+}
+
+void sweep(int angle, int dir, uint32_t wait) {
+  for (int j = 0; abs(j) < N_COLUMNS; j = j + dir) {
+    for (int k = 0; k < N_ROWS; k++) {
+      strip.setPixelColor(columns[(j-dir + N_COLUMNS*N_COLUMNS + dir * k * angle) % N_COLUMNS][k], 0);
+      for (int m = 0; m < N_COLORS; m++) { // For color tracking
+        strip.setPixelColor(columns[(j+dir * m + dir * k * angle + N_COLUMNS*N_COLUMNS) % N_COLUMNS][k], colors[m]);
       }
-    strip.show();
-    delay(wait);
     }
+  strip.show();
+  delay(wait);
   }
 }
 
@@ -277,6 +290,44 @@ void rainbowCycleWave(uint16_t wait) {
     }
     strip.show();   // write all the pixels out
     delay(wait);
+  }
+}
+
+void rainbowSinWave(uint32_t spins, uint16_t wait) {
+  for (int i=0; i < spins; i++) {
+    for (int waveStart=0; waveStart < LED_PER_ROW; waveStart++) {
+     for (int wavePointPosition=0; wavePointPosition < LED_PER_ROW; wavePointPosition++) {
+       for (int pixelPosition = 0; pixelPosition < N_ROWS; pixelPosition++) {
+         Serial.println(abs(wave(wavePointPosition) - pixelPosition));
+         if (abs(wave(wavePointPosition) - pixelPosition) < 1) {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], colors[wavePointPosition % (N_COLORS - 1)]);
+         } else {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], colors[N_COLORS-1]);
+         }
+       }
+     }
+    strip.show();
+    delay(wait);
+    }
+  }
+}
+
+void inverseRainbowSinWave(uint32_t spins, uint16_t wait) {
+  for (int i=0; i < spins; i++) {
+    for (int waveStart=0; waveStart < LED_PER_ROW; waveStart++) {
+     for (int wavePointPosition=0; wavePointPosition < LED_PER_ROW; wavePointPosition++) {
+       for (int pixelPosition = 0; pixelPosition < N_ROWS; pixelPosition++) {
+         Serial.println(abs(wave(wavePointPosition) - pixelPosition));
+         if (abs(wave(wavePointPosition) - pixelPosition) < 1) {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], colors[N_COLORS-1]);
+         } else {
+           strip.setPixelColor(columns[(waveStart + wavePointPosition) % N_COLUMNS][pixelPosition], colors[((waveStart + wavePointPosition) % N_COLUMNS) % (N_COLORS - 1)]);
+         }
+       }
+     }
+    strip.show();
+    delay(wait);
+    }
   }
 }
 
