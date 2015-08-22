@@ -78,18 +78,24 @@ void setup() {
 
 
 void loop() {
+  for (int i = 3; i > -4; i--) {
+    diagonalSweep(i, 10, 20);
+  }
+   
   for (int i = 0; i < N_COLORS; i++) {
     sinWave(colors[i+1], colors[i], 5, 20);
-    doubleSinWave(colors[i+1], colors[i], 5, 20);
+    doubleSinWave(colors[i+1], colors[i], 5, 40);
     sinWave(colors[i+1], colors[i], 5, 20);
   }
 
-  synthesizer(500, 40);
+
+
+
   horizontalRings(800, 8, 20);
   rainbowBeamBounce(20, 20, 40);
   //randomBeamBounce(20, 20, 20);
   wipe();
-  diagonalSweep(3, 20, 40);
+
   for (int i = 0; i < N_COLORS; i++) {
     sinWave(colors[i+1], colors[i], 10, 20);
   }
@@ -120,13 +126,19 @@ void colorChase(uint32_t c, uint8_t wait) {
   strip.show(); // for last erased pixel
 }
 
-void diagonalSweep(uint8_t angle, uint32_t spins, uint16_t wait) { // Sweep around the hat in a colored pattern
+void diagonalSweep(int angle, uint32_t spins, uint16_t wait) { // Sweep around the hat in a colored pattern
+  int dir;
+  if (angle >= 0) {
+    dir = 1;
+  } else {
+    dir = -1;
+  }
   for (int i = 0; i < spins; i++) {
-    for (int j = 0; j < N_COLUMNS; j++) {
+    for (int j = 0; abs(j) < N_COLUMNS; j = j + dir) {
       for (int k = 0; k < N_ROWS; k++) {
-        strip.setPixelColor(columns[(j-1 + N_COLUMNS + k * angle) % N_COLUMNS][k], strip.Color(0, 0, 0));
+        strip.setPixelColor(columns[(j-dir + N_COLUMNS*N_COLUMNS + dir * k * angle) % N_COLUMNS][k], 0);
         for (int m = 0; m < N_COLORS; m++) { // For color tracking
-          strip.setPixelColor(columns[(j+m + k * angle) % N_COLUMNS][k], colors[m]);
+          strip.setPixelColor(columns[(j+dir * m + dir * k * angle + N_COLUMNS*N_COLUMNS) % N_COLUMNS][k], colors[m]);
         }
       }
     strip.show();
@@ -341,33 +353,6 @@ void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint16_t 
   }
 }
 
-void synthesizer(uint32_t repititions, uint16_t wait) {
-  int heights[N_COLUMNS];
-  for (int i = 0; i < N_COLUMNS; i++) {
-    heights[i] = random(0, N_ROWS);
-  }
-  for (int i = 0; i < repititions; i++) {
-    for (int i = 0; i < N_LEDS; i++) {
-      strip.setPixelColor(i, strip.Color(0, 0, 0));
-    }
-    for (int j = 0; j < N_COLUMNS; j++) {
-      for (int k = 0; k < heights[j]; k++) {
-        strip.setPixelColor(columns[j][k], colors[6]);
-      }
-      if(random(0,2) == 0) {
-        heights[j] = min(N_ROWS - 1, j+1);
-        Serial.println("increased");
-      } else {
-        heights[j] = max(0, j - 1);
-        Serial.println("decreased");
-      }
-    }
-    strip.show();
-    delay(wait);
-  }
-}
-    
-
 void twistedSweep(uint32_t spins, uint16_t wait) { // Sweep around the hat in a colored pattern
   for (int i = 0; i < spins; i++) {
     for (int j = 0; j < N_LEDS; j++) {
@@ -393,41 +378,41 @@ void twistedSweep(uint32_t spins, uint16_t wait) { // Sweep around the hat in a 
 float doubleWave(uint16_t position) {
   switch(position) {
     case 0:
-      return 4.5;
+      return 4;
     case 1:
-      return 5.5;
+      return 5;
     case 2:
       return 6;
     case 3:
-      return 6;
+      return 4.5;
     case 4:
-      return 4.5;
+      return 3.5;
     case 5:
-      return 3.5;
+      return 1.5;
     case 6:
-      return 2;
+      return 0;
     case 7:
-      return 2;
+      return 1;
     case 8:
-      return 3.5;
+      return 2.5;
     case 9:
-      return 4.5;
+      return 4;
     case 10:
-      return 5.5;
+      return 5;
     case 11:
       return 6;
     case 12:
-      return 6;
-    case 13:
       return 4.5;
+    case 13:
+      return 3.5;
     case 14:
-      return 3.5;
+      return 1.5;
     case 15:
-      return 2;
+      return 0;
     case 16:
-      return 2;
+      return 1;
     case 17:
-      return 3.5;
+      return 2.5;
   }
 }
 
@@ -525,6 +510,11 @@ void wipe() {
     strip.show();
     delay(5);
   }
+}
+
+unsigned long newrandom(unsigned long howsmall, unsigned long howbig)
+{
+ return howsmall + random() % (howbig - howsmall);
 }
 
 
