@@ -98,6 +98,13 @@ void loop() {
   rainbowCycleWave(0);
   horizontalRings(800, 8, 20);
   inverseRainbowSinWave(10,20);
+  
+  for (int j = 0; j < 5; j++) {
+    for (int i = 1; i <= N_COLORS; i++ ) {
+      merge(colors[i % N_COLORS], colors[(i - 1) % N_COLORS], (j + i) % 2, 20);
+    }
+  }
+  
   accelleratingSweep(3, 10);
   
   sinWave(colors[4], colors[3], 5, 20);
@@ -114,7 +121,6 @@ void loop() {
   
   rainbowBeamBounce(20, 20, 40);
 
-  rainbowJump(10);
 
   twistedSweep(300, 40);
 
@@ -197,6 +203,45 @@ void doubleSinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uin
   }
 }
 
+void game(uint32_t generations, uint16_t wait) {
+  int state[N_COLUMNS][N_ROWS];
+  int futureState[N_COLUMNS][N_ROWS];
+  
+  for (int i = 0; i < N_COLUMNS; i++) {
+    for (int j = 0; j < N_ROWS; j++) {
+      if (random(4) == 0) {
+        state[i][j] = 1;
+        strip.setPixelColor(columns[i][j], colors[0]);
+      } else {
+        state[i][j] = 0;
+        strip.setPixelColor(columns[i][j], 0);
+      }
+    }
+  }
+  strip.show();
+  delay(wait);
+  
+  for (int i = 0; i < generations; i++) {
+    for (int j = 0; j < N_COLUMNS; j++) {
+      for (int k = 0; k < N_ROWS; k++) {
+        switch(state[(j - 1 + N_COLUMNS) % N_COLUMNS][(k - 1 + N_ROWS) % N_ROWS] + 
+        state[(j + 1 + N_COLUMNS) % N_COLUMNS][(k - 1 + N_ROWS) % N_ROWS] + 
+        state[(j - 1 + N_COLUMNS) % N_COLUMNS][(k + 1 + N_ROWS) % N_ROWS] + 
+        state[(j + 1 + N_COLUMNS) % N_COLUMNS][(k + 1 + N_ROWS) % N_ROWS]
+       ) {
+         
+         case 0:
+         case 1:
+           futureState[j][k] = 0;
+  }
+      }
+    }
+  }
+}
+  
+  
+  
+  
 
 void horizontalRings(uint32_t moves, uint8_t length, uint16_t wait) {
   int positions[N_ROWS];
@@ -216,6 +261,34 @@ void horizontalRings(uint32_t moves, uint8_t length, uint16_t wait) {
     }
     strip.show();
     delay(wait);
+  }
+}
+
+void merge(uint32_t c1, uint32_t c2, boolean fromEdges, uint8_t wait) {
+  for (int i = 0; i < N_LEDS; i++) {
+    strip.setPixelColor(i, c2);
+  }
+  strip.show();
+  delay(wait); 
+  
+  if (fromEdges) {
+    for (int i = 0, j = N_COLUMNS - 1; i < j; i++, j--) {
+      for (int k = 0; k < N_ROWS; k++) {
+        strip.setPixelColor(columns[i][k], c1);
+        strip.setPixelColor(columns[j][k], c1);
+      }
+      strip.show();
+      delay(wait); 
+    }
+  } else {
+    for (int i = (N_COLUMNS / 2) - 1, j = N_COLUMNS / 2 + 1; i >=0; i--, j++) {
+      for (int k = 0; k < N_ROWS; k++) {
+        strip.setPixelColor(columns[i][k], c1);
+        strip.setPixelColor(columns[j][k], c1);
+      }
+      strip.show();
+      delay(wait); 
+    }
   }
 }
 
