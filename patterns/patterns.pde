@@ -94,34 +94,32 @@ void accelleratingSweep(int maxAngle, int minSpeed) {
 
 
 void loop() {
+  dither(10);
+  rainbowCycleWave(0);
+  horizontalRings(800, 8, 20);
   inverseRainbowSinWave(10,20);
   accelleratingSweep(3, 10);
-   
-  for (int i = 0; i < N_COLORS; i++) {
-    sinWave(colors[i+1], colors[i], 5, 20);
-    doubleSinWave(colors[i+1], colors[i], 5, 40);
-    sinWave(colors[i+1], colors[i], 5, 20);
-  }
+  
+  sinWave(colors[4], colors[3], 5, 20);
+  doubleSinWave(colors[4], colors[3], 5, 40);
+  sinWave(colors[4], colors[3], 5, 20);
+  
+  sinWave(colors[6], colors[5], 5, 20);
+  doubleSinWave(colors[6], colors[5], 5, 40);
+  sinWave(colors[6], colors[5], 5, 20);
+  
 
 
 
-
-  horizontalRings(800, 8, 20);
+  
   rainbowBeamBounce(20, 20, 40);
-  //randomBeamBounce(20, 20, 20);
-  wipe();
 
-  for (int i = 0; i < N_COLORS; i++) {
-    sinWave(colors[i+1], colors[i], 10, 20);
-  }
-  rainbowCycleWave(0);
-  //rainbowJump(10);
+  rainbowJump(10);
 
   twistedSweep(300, 40);
 
-  dither(10);
+  
   colorChase(strip.Color(127, 0, 0), 10); 
-
   
 }
 
@@ -147,22 +145,16 @@ void diagonalSweep(int angle, int dir, uint32_t spins, uint16_t wait) { // Sweep
   }
 }
 
-void sweep(int angle, int dir, uint32_t wait) {
-  for (int j = 0; abs(j) < N_COLUMNS; j = j + dir) {
-    for (int k = 0; k < N_ROWS; k++) {
-      strip.setPixelColor(columns[(j-dir + N_COLUMNS*N_COLUMNS + dir * k * angle) % N_COLUMNS][k], 0);
-      for (int m = 0; m < N_COLORS; m++) { // For color tracking
-        strip.setPixelColor(columns[(j+dir * m + dir * k * angle + N_COLUMNS*N_COLUMNS) % N_COLUMNS][k], colors[m]);
-      }
-    }
-  strip.show();
-  delay(wait);
-  }
-}
+
 
 // An "ordered dither" fills every pixel in a sequence that looks
 // sparkly and almost random, but actually follows a specific order.
 void dither(uint8_t wait) {
+  
+  uint32_t rainbowColors[N_LEDS];  // Make the dither pattern transition into the rainbowCycleWave pattern
+  for (uint16_t i=0; i < N_LEDS; i++) {
+    rainbowColors[i] = Wheel((i * 384 / N_LEDS) % 384);
+  }
 
   // Determine highest bit needed to represent pixel index
   int hiBit = 0;
@@ -179,7 +171,7 @@ void dither(uint8_t wait) {
       reverse <<= 1;
       if(i & bit) reverse |= 1;
     }
-    strip.setPixelColor(reverse, colors[random(N_COLORS)]);
+    strip.setPixelColor(reverse, rainbowColors[reverse]);
     strip.show();
     delay(wait);
   }
@@ -215,7 +207,7 @@ void horizontalRings(uint32_t moves, uint8_t length, uint16_t wait) {
   for (int i = 1; i <= moves; i++) {
     for (int j = 0; j < N_ROWS; j++) {
       if (i % (j + 1) == 0) {
-        strip.setPixelColor(rows[j][positions[j]], strip.Color(0, 0, 0));
+        strip.setPixelColor(rows[j][positions[j]], 0);
         positions[j] = int(positions[j] + pow(-1, j+1) + LED_PER_ROW) % LED_PER_ROW;
        for (int k = 0; abs(k) < length; k += pow(-1, j + 1)) {
           strip.setPixelColor(rows[j][int(positions[j] + k + LED_PER_ROW) % LED_PER_ROW] , colors[j % N_ROWS]);
@@ -240,7 +232,7 @@ void rainbowBeamBounce(uint32_t repeats, uint8_t length, uint16_t wait) {
     int y_direction = random(0, 2);
     
     for (int j = 0; j < 4 * length; j++) {
-      strip.setPixelColor(trail[length - 1], strip.Color(0, 0, 0)); 
+      strip.setPixelColor(trail[length - 1], 0); 
       for (int k = length - 1; k > 0; k--) {
         trail[k] = trail[k - 1];
         strip.setPixelColor(trail[k], colors[k % N_COLORS]);
@@ -286,7 +278,7 @@ void rainbowCycleWave(uint16_t wait) {
       // wheel (thats the i / strip.numPixels() part)
       // Then add in j which makes the colors go around per pixel
       // the % 384 is to make the wheel cycle around
-      strip.setPixelColor(i, Wheel(((i * 384 / LEG_LENGTH) + j) % 384));
+      strip.setPixelColor(i, Wheel(((i * 384 / N_LEDS) + j) % 384));
     }
     strip.show();   // write all the pixels out
     delay(wait);
@@ -349,7 +341,7 @@ void randomBeamBounce(uint32_t repeats, uint8_t length, uint16_t wait) {
       tailColor = random(0, N_COLORS);
     }
     for (int j = 0; j < 4 * length; j++) {
-      strip.setPixelColor(trail[length - 1], strip.Color(0, 0, 0)); 
+      strip.setPixelColor(trail[length - 1], 0); 
       for (int k = length - 1; k > 0; k--) {
         trail[k] = trail[k - 1];
         strip.setPixelColor(trail[k], strip.Color(extractRed(colors[tailColor]) * (length - k) / length,
@@ -401,6 +393,19 @@ void sinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uint16_t 
     strip.show();
     delay(wait);
     }
+  }
+}
+
+void sweep(int angle, int dir, uint32_t wait) {
+  for (int j = 0; abs(j) < N_COLUMNS; j = j + dir) {
+    for (int k = 0; k < N_ROWS; k++) {
+      strip.setPixelColor(columns[(j-dir + N_COLUMNS*N_COLUMNS + dir * k * angle) % N_COLUMNS][k], 0);
+      for (int m = 0; m < N_COLORS; m++) { // For color tracking
+        strip.setPixelColor(columns[(j+dir * m + dir * k * angle + N_COLUMNS*N_COLUMNS) % N_COLUMNS][k], colors[m]);
+      }
+    }
+  strip.show();
+  delay(wait);
   }
 }
 
@@ -484,7 +489,7 @@ int extractRed(uint32_t color) {
 
 void quickWipe() {
   for (int i = 0; i < N_LEDS; i++) {
-    strip.setPixelColor(i, strip.Color(0, 0, 0));
+    strip.setPixelColor(i, 0);
   }
   strip.show();
 }
@@ -557,7 +562,7 @@ uint32_t Wheel(uint16_t WheelPos)
 
 void wipe() {
   for (int i = 0; i < N_LEDS; i++) {
-    strip.setPixelColor(i, strip.Color(0, 0, 0));
+    strip.setPixelColor(i, 0);
     strip.show();
     delay(5);
   }
