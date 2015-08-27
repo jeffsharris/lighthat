@@ -95,13 +95,14 @@ void accelleratingSweep(int maxAngle, int minSpeed) {
 
 void loop() {
   dither(10);
+
   rainbowCycleWave(0);
   horizontalRings(800, 8, 20);
   inverseRainbowSinWave(10,20);
   
   for (int j = 0; j < 5; j++) {
     for (int i = 1; i <= N_COLORS; i++ ) {
-      merge(colors[i % N_COLORS], colors[(i - 1) % N_COLORS], (j + i) % 2, 20);
+      merge(colors[i % N_COLORS], (j + i) % 2, 30);
     }
   }
   
@@ -123,9 +124,6 @@ void loop() {
 
 
   twistedSweep(300, 40);
-
-  
-  colorChase(strip.Color(127, 0, 0), 10); 
   
 }
 
@@ -202,42 +200,6 @@ void doubleSinWave(uint32_t color, uint32_t backgroundColor, uint32_t spins, uin
     }
   }
 }
-
-void game(uint32_t generations, uint16_t wait) {
-  int state[N_COLUMNS][N_ROWS];
-  int futureState[N_COLUMNS][N_ROWS];
-  
-  for (int i = 0; i < N_COLUMNS; i++) {
-    for (int j = 0; j < N_ROWS; j++) {
-      if (random(4) == 0) {
-        state[i][j] = 1;
-        strip.setPixelColor(columns[i][j], colors[0]);
-      } else {
-        state[i][j] = 0;
-        strip.setPixelColor(columns[i][j], 0);
-      }
-    }
-  }
-  strip.show();
-  delay(wait);
-  
-  for (int i = 0; i < generations; i++) {
-    for (int j = 0; j < N_COLUMNS; j++) {
-      for (int k = 0; k < N_ROWS; k++) {
-        switch(state[(j - 1 + N_COLUMNS) % N_COLUMNS][(k - 1 + N_ROWS) % N_ROWS] + 
-        state[(j + 1 + N_COLUMNS) % N_COLUMNS][(k - 1 + N_ROWS) % N_ROWS] + 
-        state[(j - 1 + N_COLUMNS) % N_COLUMNS][(k + 1 + N_ROWS) % N_ROWS] + 
-        state[(j + 1 + N_COLUMNS) % N_COLUMNS][(k + 1 + N_ROWS) % N_ROWS]
-       ) {
-         
-         case 0:
-         case 1:
-           futureState[j][k] = 0;
-  }
-      }
-    }
-  }
-}
   
   
   
@@ -264,32 +226,24 @@ void horizontalRings(uint32_t moves, uint8_t length, uint16_t wait) {
   }
 }
 
-void merge(uint32_t c1, uint32_t c2, boolean fromEdges, uint8_t wait) {
-  for (int i = 0; i < N_LEDS; i++) {
-    strip.setPixelColor(i, c2);
-  }
-  strip.show();
-  delay(wait); 
-  
-  if (fromEdges) {
-    for (int i = 0, j = N_COLUMNS - 1; i < j; i++, j--) {
-      for (int k = 0; k < N_ROWS; k++) {
-        strip.setPixelColor(columns[i][k], c1);
-        strip.setPixelColor(columns[j][k], c1);
+void merge(uint32_t c1, boolean fromEdges, uint8_t wait) {  
+    for (int i = 0; i < N_COLUMNS / 2; i++) {
+      for (int k = 0; k <= i; k++) {
+        for (int m = 0; m < N_ROWS; m++) {
+          uint32_t dimmedColor = dimColor(c1, (1.0 + k) / (1.0 + i));
+          if (fromEdges) {
+            strip.setPixelColor(columns[k][m], dimmedColor);
+            strip.setPixelColor(columns[N_COLUMNS - 1 - k][m], dimmedColor);
+          } else {
+            strip.setPixelColor(columns[N_COLUMNS / 2 - k][m], dimmedColor);
+            strip.setPixelColor(columns[N_COLUMNS / 2 + 1 + k][m], dimmedColor);
+            
+          }
+        }
       }
       strip.show();
       delay(wait); 
     }
-  } else {
-    for (int i = (N_COLUMNS / 2) - 1, j = N_COLUMNS / 2 + 1; i >=0; i--, j++) {
-      for (int k = 0; k < N_ROWS; k++) {
-        strip.setPixelColor(columns[i][k], c1);
-        strip.setPixelColor(columns[j][k], c1);
-      }
-      strip.show();
-      delay(wait); 
-    }
-  }
 }
 
 void rainbowBeamBounce(uint32_t repeats, uint8_t length, uint16_t wait) {
@@ -646,6 +600,13 @@ unsigned long newrandom(unsigned long howsmall, unsigned long howbig)
  return howsmall + random() % (howbig - howsmall);
 }
 
+uint32_t dimColor(uint32_t c, float fraction) {
+  byte  r, g, b;
+  g = ((c >> 16) & 0x7f) * fraction;
+  r = ((c >>  8) & 0x7f) * fraction;
+  b =  (c        & 0x7f) * fraction;
+  return strip.Color(r, g, b);
+}
 
 
 
